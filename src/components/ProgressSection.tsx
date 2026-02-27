@@ -64,8 +64,26 @@ const TrendChart: React.FC<{ data: number[] }> = ({ data }) => {
   );
 };
 
+// Default data for uploaded students
+const defaultUploadedData = {
+  score: 65,
+  scoreUp: "↑ New upload",
+  fixed: "0/5",
+  streak: 0,
+  planDone: 0,
+  trend: [50, 55, 58, 62, 65],
+  subjects: [
+    { name: "Physics", pct: 60, color: "#6c47ff" },
+    { name: "Chemistry", pct: 70, color: "#ff6b35" },
+    { name: "Mathematics", pct: 65, color: "#00c896" }
+  ]
+};
+
 const ProgressSection: React.FC<ProgressSectionProps> = ({ studentId, onStudentChange }) => {
-  const s = STUDENTS[studentId as keyof typeof STUDENTS];
+  // Handle uploaded student case
+  const isUploaded = studentId === 'uploaded';
+  const s = isUploaded ? defaultUploadedData : STUDENTS[studentId as keyof typeof STUDENTS];
+  
   const [barWidths, setBarWidths] = useState<string[]>([]);
 
   useEffect(() => {
@@ -86,6 +104,7 @@ const ProgressSection: React.FC<ProgressSectionProps> = ({ studentId, onStudentC
           <option value="rahul">Rahul Sharma — JEE</option>
           <option value="priya">Priya Nair — NEET</option>
           <option value="arjun">Arjun Mehta — JEE Adv</option>
+          {isUploaded && <option value="uploaded">Uploaded Results</option>}
         </select>
       </div>
 

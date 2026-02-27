@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { STUDENTS } from '../data/students';
+import { Topic } from '../services/api';
 
 interface AnalysisSectionProps {
   studentId: string;
+  analysisData: { weak: Topic[]; strong: Topic[]; score: number } | null;
   onGeneratePlan: () => void;
   onBack: () => void;
 }
@@ -46,32 +48,45 @@ const TopicCard: React.FC<{ topic: any; isWeak: boolean }> = ({ topic, isWeak })
   );
 };
 
-const AnalysisSection: React.FC<AnalysisSectionProps> = ({ studentId, onGeneratePlan, onBack }) => {
-  const s = STUDENTS[studentId as keyof typeof STUDENTS];
-  const color = s.score >= 65 ? 'var(--success)' : s.score >= 50 ? 'var(--warn)' : 'var(--danger)';
-  const pct = s.score;
+const AnalysisSection: React.FC<AnalysisSectionProps> = ({ studentId, analysisData, onGeneratePlan, onBack }) => {
+  // Handle uploaded student case
+  const isUploaded = studentId === 'uploaded';
+  const s = isUploaded ? null : STUDENTS[studentId as keyof typeof STUDENTS];
+  
+  // Use API data if available, otherwise fallback to student data
+  const weakTopics = analysisData?.weak || (s?.weak || []);
+  const strongTopics = analysisData?.strong || (s?.strong || []);
+  const score = analysisData?.score ?? (s?.score ?? 0);
+  
+  const color = score >= 65 ? 'var(--success)' : score >= 50 ? 'var(--warn)' : 'var(--danger)';
+  const pct = score;
+
+  // Student name and exam info
+  const studentName = isUploaded ? 'Uploaded Results' : (s?.name || 'Unknown');
+  const studentExam = isUploaded ? 'Custom Mock Test' : (s?.exam || 'JEE Mains');
+  const studentMock = isUploaded ? 'CSV Upload' : (s?.mock || 'Mock Test');
 
   return (
     <div className="section">
       <div className="analysis-header">
         <div className="student-info">
-          <div className="section-label">{s.name}</div>
-          <p style={{ color: 'var(--muted)' }}>{s.exam} · {s.mock} · Feb 2025</p>
+          <div className="section-label">{studentName}</div>
+          <p style={{ color: 'var(--muted)' }}>{studentExam} · {studentMock} · Feb 2025</p>
         </div>
         <div className="score-ring" style={{ background: `conic-gradient(${color} ${pct * 3.6}deg, rgba(255,255,255,0.06) ${pct * 3.6}deg)` }}>
-          <span>{s.score}%</span>
+          <span>{pct}%</span>
           <small>Overall</small>
         </div>
       </div>
 
       <div className="section-label" style={{ fontSize: '1rem', marginBottom: '16px' }}>🔴 Weak Topics (Need Immediate Attention)</div>
       <div className="topics-grid">
-        {s.weak.map((t, i) => <TopicCard key={i} topic={t} isWeak={true} />)}
+        {weakTopics.map((t, i) => <TopicCard key={i} topic={t} isWeak={true} />)}
       </div>
 
       <div className="section-label" style={{ fontSize: '1rem', marginBottom: '16px', marginTop: '32px' }}>🟢 Strong Topics (Keep Practising)</div>
       <div className="topics-grid">
-        {s.strong.map((t, i) => <TopicCard key={i} topic={t} isWeak={false} />)}
+        {strongTopics.map((t, i) => <TopicCard key={i} topic={t} isWeak={false} />)}
       </div>
 
       <div className="cta-row">

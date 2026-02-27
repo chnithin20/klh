@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { STUDENTS } from '../data/students';
 import { AI_RESPONSES } from '../data/aiResponses';
+import { api } from '../services/api';
 
 interface Message {
   id: string;
@@ -13,12 +14,18 @@ interface ChatSectionProps {
 }
 
 const ChatSection: React.FC<ChatSectionProps> = ({ studentId }) => {
-  const s = STUDENTS[studentId as keyof typeof STUDENTS];
+  // Handle uploaded student case
+  const isUploaded = studentId === 'uploaded';
+  const s = isUploaded ? null : STUDENTS[studentId as keyof typeof STUDENTS];
+  
+  // Student name for greeting
+  const studentName = isUploaded ? 'there' : (s?.name?.split(' ')[0] || 'there');
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'ai',
-      text: `Hey ${s.name.split(' ')[0]}! 👋 I'm your AI Coach. I've analyzed your mock test and I know exactly where you're struggling. Ask me anything — I'll explain concepts simply, give you practice questions, or adjust your study plan. What's on your mind?`,
+      text: `Hey ${studentName}! 👋 I'm your AI Coach. I've analyzed your mock test and I know exactly where you're struggling. Ask me anything — I'll explain concepts simply, give you practice questions, or adjust your study plan. What's on your mind?`,
     },
   ]);
   const [input, setInput] = useState('');
@@ -41,19 +48,24 @@ const ChatSection: React.FC<ChatSectionProps> = ({ studentId }) => {
     return AI_RESPONSES.default;
   };
 
-  const handleSend = (text: string) => {
+  const handleSend = async (text: string) => {
     if (!text.trim()) return;
     const userMsg: Message = { id: Date.now().toString(), role: 'user', text };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = getAIResponse(text);
-      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'ai', text: response };
+    try {
+      const result = await api.chat(text);
+      const aiMsg: Message = { id: (Date.now() + 1).toString(), role: 'ai', text: result.reply };
       setMessages(prev => [...prev, aiMsg]);
+    } catch (error) {
+      console.error('Chat failed:', error);
+      const errorMsg: Message = { id: (Date.now() + 1).toString(), role: 'ai', text: 'Sorry, I couldn\'t process your message. Please try again.' };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1200 + Math.random() * 600);
+    }
   };
 
   const quickQs = [
